@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vanek — Stop Searching. Start Fixing.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #0a0a0a;
+      --steel: #111418;
+      --iron: #1c2128;
+      --plate: #2a3140;
+      --wire: #ff6a00;
+      --spark: #ffaa00;
+      --ghost: rgba(255,255,255,0.06);
+      --mist: rgba(255,255,255,0.45);
+      --white: #f0ede8;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+      --display: 'Bebas Neue', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--sans);
+      overflow-x: hidden;
+    }
+
+    /* noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 3rem;
+      border-bottom: 1px solid var(--ghost);
+      backdrop-filter: blur(12px);
+      background: rgba(10,10,10,0.7);
+    }
+
+    .nav-logo {
+      font-family: var(--display);
+      font-size: 2rem;
+      letter-spacing: 0.08em;
+      color: var(--white);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--wire); }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mist);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--wire); }
+
+    .nav-cta {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--wire);
+      color: var(--black);
+      border: none;
+      padding: 0.6rem 1.4rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .nav-cta:hover { background: var(--spark); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8rem 3rem 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,106,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,106,0,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,106,0,0.12) 0%, transparent 70%);
+      top: 10%;
+      right: -100px;
+      pointer-events: none;
+    }
+
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--wire);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.2s;
+    }
+
+    .hero-headline {
+      font-family: var(--display);
+      font-size: clamp(4.5rem, 11vw, 10rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.4s;
+    }
+
+    .hero-headline .accent { color: var(--wire); }
+
+    .hero-sub {
+      margin-top: 2rem;
+      max-width: 560px;
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--mist);
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.6s;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.8s;
+    }
+
+    .btn-primary {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--wire);
+      color: var(--black);
+      border: none;
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, transform 0.15s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary:hover { background: var(--spark); transform: translateY(-2px); }
+
+    .btn-secondary {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover { border-color: var(--wire); color: var(--wire); }
+
+    .hero-stat-row {
+      display: flex;
+      gap: 3rem;
+      margin-top: 4rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 1s;
+    }
+
+    .hero-stat { border-left: 2px solid var(--wire); padding-left: 1rem; }
+    .hero-stat .num {
+      font-family: var(--display);
+      font-size: 2.2rem;
+      color: var(--white);
+      line-height: 1;
+    }
+    .hero-stat .label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-top: 0.3rem;
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-wrap {
+      border-top: 1px solid var(--ghost);
+      border-bottom: 1px solid var(--ghost);
+      background: var(--steel);
+      overflow: hidden;
+      padding: 1rem 0;
+      white-space: nowrap;
+    }
+
+    .marquee-track {
+      display: inline-flex;
+      gap: 3rem;
+      animation: marquee 22s linear infinite;
+    }
+
+    .marquee-item {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--mist);
+      flex-shrink: 0;
+    }
+
+    .marquee-item .dot { color: var(--wire); margin-right: 0.5rem; }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ── PROBLEM SECTION ── */
+    .section {
+      padding: 7rem 3rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--wire);
+      margin-bottom: 1.2rem;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      margin-bottom: 1.5rem;
+    }
+
+    .section-body {
+      max-width: 620px;
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.8;
+      color: var(--mist);
+    }
+
+    /* problem cards */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin-top: 4rem;
+      background: var(--ghost);
+      border: 1px solid var(--ghost);
+    }
+
+    .problem-card {
+      background: var(--steel);
+      padding: 2.5rem 2rem;
+      transition: background 0.2s;
+    }
+
+    .problem-card:hover { background: var(--iron); }
+
+    .problem-num {
+      font-family: var(--display);
+      font-size: 3.5rem;
+      color: var(--wire);
+      opacity: 0.3;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .problem-title {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+    }
+
+    .problem-text {
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--mist);
+    }
+
+    /* ── FEATURES ── */
+    .features-wrap {
+      background: var(--steel);
+      border-top: 1px solid var(--ghost);
+      border-bottom: 1px solid var(--ghost);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-item {
+      padding: 3.5rem 3rem;
+      border-right: 1px solid var(--ghost);
+      border-bottom: 1px solid var(--ghost);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.25s;
+    }
+
+    .feature-item:hover { background: var(--iron); }
+
+    .feature-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 0;
+      background: var(--wire);
+      transition: height 0.3s ease;
+    }
+
+    .feature-item:hover::before { height: 100%; }
+
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .feature-title {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-text {
+      font-size: 0.92rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--mist);
+    }
+
+    /* ── WHO IT'S FOR ── */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 4rem;
+    }
+
+    .audience-card {
+      border: 1px solid var(--ghost);
+      padding: 2.5rem 2rem;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .audience-card:hover { border-color: var(--wire); }
+
+    .audience-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .audience-title {
+      font-family: var(--display);
+      font-size: 1.6rem;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+    }
+
+    .audience-text {
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--mist);
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      background: var(--iron);
+      border-top: 1px solid var(--ghost);
+      text-align: center;
+      padding: 7rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,106,0,0.1) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .cta-section .section-title { margin-bottom: 1rem; }
+    .cta-section .section-body { margin: 0 auto 2.5rem; text-align: center; }
+
+    /* ── FORM ── */
+    .access-form {
+      display: flex;
+      gap: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .access-form input {
+      flex: 1;
+      background: var(--black);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-right: none;
+      color: var(--white);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.9rem 1.2rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .access-form input::placeholder { color: rgba(255,255,255,0.25); }
+    .access-form input:focus { border-color: var(--wire); }
+
+    .access-form button {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--wire);
+      color: var(--black);
+      border: none;
+      padding: 0.9rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .access-form button:hover { background: var(--spark); }
+
+    .form-note {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.2);
+      margin-top: 1rem;
+      text-transform: uppercase;
+    }
+
+    .success-msg {
+      display: none;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--wire);
+      letter-spacing: 0.1em;
+      margin-top: 1rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      border-top: 1px solid var(--ghost);
+      padding: 2rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: var(--display);
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+      color: var(--white);
+    }
+
+    .footer-logo span { color: var(--wire); }
+
+    .footer-text {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero { padding: 7rem 1.5rem 4rem; }
+      .hero-stat-row { gap: 1.5rem; flex-wrap: wrap; }
+      .section { padding: 5rem 1.5rem; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .audience-grid { grid-template-columns: 1fr; }
+      .access-form { flex-direction: column; }
+      .access-form input { border-right: 1px solid rgba(255,255,255,0.15); border-bottom: none; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">VANEK<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#who">Who It's For</a></li>
+    </ul>
+    <button class="nav-cta" onclick="document.getElementById('access').scrollIntoView({behavior:'smooth'})">Request Access</button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-tag">// AI-powered technical knowledge — v1.0</div>
+    <h1 class="hero-headline">
+      STOP<br>
+      SEARCHING<span class="accent">.</span><br>
+      START<br>
+      FIXING<span class="accent">.</span>
+    </h1>
+    <p class="hero-sub">
+      Vanek is the AI knowledge assistant built for the trades — giving technicians and apprentices instant, sourced answers from their own manuals, equipment docs, and procedures. No guesswork. No wasted time.
+    </p>
+    <div class="hero-actions">
+      <a href="#access" class="btn-primary">Request Early Access</a>
+      <a href="#features" class="btn-secondary">See How It Works</a>
+    </div>
+    <div class="hero-stat-row">
+      <div class="hero-stat">
+        <div class="num">3.2H</div>
+        <div class="label">Avg. time lost per tech per day searching for answers</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">0</div>
+        <div class="label">Guesswork — every answer sourced from your own docs</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">∞</div>
+        <div class="label">Manuals, procedures & knowledge your team can upload</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span class="marquee-item"><span class="dot">▸</span>CNC Machining</span>
+      <span class="marquee-item"><span class="dot">▸</span>Aviation Maintenance</span>
+      <span class="marquee-item"><span class="dot">▸</span>Automotive Repair</span>
+      <span class="marquee-item"><span class="dot">▸</span>HVAC Systems</span>
+      <span class="marquee-item"><span class="dot">▸</span>Industrial Electrical</span>
+      <span class="marquee-item"><span class="dot">▸</span>Welding & Fabrication</span>
+      <span class="marquee-item"><span class="dot">▸</span>Vocational Training</span>
+      <span class="marquee-item"><span class="dot">▸</span>Robotics & Automation</span>
+      <span class="marquee-item"><span class="dot">▸</span>CNC Machining</span>
+      <span class="marquee-item"><span class="dot">▸</span>Aviation Maintenance</span>
+      <span class="marquee-item"><span class="dot">▸</span>Automotive Repair</span>
+      <span class="marquee-item"><span class="dot">▸</span>HVAC Systems</span>
+      <span class="marquee-item"><span class="dot">▸</span>Industrial Electrical</span>
+      <span class="marquee-item"><span class="dot">▸</span>Welding & Fabrication</span>
+      <span class="marquee-item"><span class="dot">▸</span>Vocational Training</span>
+      <span class="marquee-item"><span class="dot">▸</span>Robotics & Automation</span>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="section" id="problem">
+    <div class="reveal">
+      <div class="section-label">// 01 — The Problem</div>
+      <h2 class="section-title">THE FLOOR<br>DOESN'T WAIT</h2>
+      <p class="section-body">Every minute a technician spends searching through binders, PDFs, and browser tabs is a minute a machine stays down. The knowledge exists — it's just buried. Vanek ends that.</p>
+    </div>
+    <div class="problem-grid reveal">
+      <div class="problem-card">
+        <div class="problem-num">01</div>
+        <div class="problem-title">Scattered Information</div>
+        <p class="problem-text">Manuals live in filing cabinets, shared drives, and someone's memory. Critical procedures get lost between shifts and personnel changes.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num">02</div>
+        <div class="problem-title">Generic AI Answers</div>
+        <p class="problem-text">ChatGPT gives educated guesses. In a high-stakes repair environment, a best guess isn't good enough — you need answers sourced from your actual documentation.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num">03</div>
+        <div class="problem-title">Knowledge Walking Out</div>
+        <p class="problem-text">When your most experienced technician retires, their knowledge leaves with them. Vanek captures and preserves institutional knowledge permanently.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <div class="features-wrap" id="features">
+    <div style="max-width:1200px;margin:0 auto;padding:5rem 3rem 2rem;">
+      <div class="reveal">
+        <div class="section-label">// 02 — How It Works</div>
+        <h2 class="section-title">BUILT FOR<br>THE REAL WORLD</h2>
+      </div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-item reveal">
+        <div class="feature-icon">📁</div>
+        <div class="feature-title">Upload Your Docs</div>
+        <p class="feature-text">Upload any manual, schematic, procedure, or internal document. Vanek indexes everything into a private, searchable knowledge base that belongs entirely to your organization.</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant AI Answers</div>
+        <p class="feature-text">Ask a question in plain language. Vanek returns precise answers drawn directly from your uploaded materials — not a hallucination, not a guess. Sourced and cited every time.</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Completely Private</div>
+        <p class="feature-text">Your data is yours. Nothing is shared between organizations. Your proprietary procedures and equipment specs never leave your private database.</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Works Anywhere</div>
+        <p class="feature-text">Access Vanek on any device — desktop, tablet, or phone. On the shop floor, in the field, or in the classroom. Designed for the way technicians actually work.</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="feature-icon">🎓</div>
+        <div class="feature-title">Built for Training</div>
+        <p class="feature-text">For vocational programs, Vanek acts as an always-available AI instructor — answering student questions instantly and letting instructors focus on hands-on teaching.</p>
+      </div>
+      <div class="feature-item reveal">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Admin Dashboard</div>
+        <p class="feature-text">Managers and instructors get full visibility into what questions are being asked, what gaps exist in documentation, and how teams are using the platform.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHO IT'S FOR -->
+  <section class="section" id="who">
+    <div class="reveal">
+      <div class="section-label">// 03 — Who It's For</div>
+      <h2 class="section-title">YOUR TEAM.<br>YOUR TRADE.</h2>
+      <p class="section-body">Vanek is built for any organization where technical knowledge is the difference between a machine running and a machine down.</p>
+    </div>
+    <div class="audience-grid">
+      <div class="audience-card reveal">
+        <div class="audience-icon">🏭</div>
+        <div class="audience-title">Manufacturing Shops</div>
+        <p class="audience-text">CNC operators, maintenance techs, and floor supervisors get instant access to machine-specific documentation. Less downtime. More output.</p>
+      </div>
+      <div class="audience-card reveal">
+        <div class="audience-icon">🎓</div>
+        <div class="audience-title">Vocational Schools</div>
+        <p class="audience-text">Trade programs can upload their entire curriculum and equipment manuals. Students learn faster, instructors teach smarter.</p>
+      </div>
+      <div class="audience-card reveal">
+        <div class="audience-icon">🔧</div>
+        <div class="audience-title">Private Contractors</div>
+        <p class="audience-text">Independent technicians in automotive, aviation, HVAC, and electrical carry their entire knowledge base in their pocket — on every job site.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" id="access">
+    <div class="cta-glow"></div>
+    <div class="reveal">
+      <div class="section-label">// 04 — Early Access</div>
+      <h2 class="section-title">BE FIRST<br>ON THE FLOOR</h2>
+      <p class="section-body">Vanek is currently in development. Join the early access list and be among the first organizations to put it to work.</p>
+      <div class="access-form">
+        <input type="email" id="emailInput" placeholder="your@email.com" />
+        <button onclick="handleSubmit()">Join Waitlist</button>
+      </div>
+      <div class="success-msg" id="successMsg">✓ You're on the list. We'll be in touch.</div>
+      <p class="form-note">No spam. No commitment. Just first access.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">VANEK<span>.</span></div>
+    <div class="footer-text">© 2025 Vanek — vanek.ai — All rights reserved</div>
+    <div class="footer-text">Built for the trades.</div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    reveals.forEach(r => observer.observe(r));
+
+    // Form
+    function handleSubmit() {
+      const email = document.getElementById('emailInput').value;
+      if (!email || !email.includes('@')) {
+        document.getElementById('emailInput').style.borderColor = '#ff3333';
+        return;
+      }
+      document.querySelector('.access-form').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
